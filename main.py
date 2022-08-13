@@ -1,6 +1,5 @@
 import math
 import random
-
 import pygame
 from pygame.locals import *
 
@@ -20,16 +19,35 @@ if_mouse_clicked = False
 
 
 def calculate_distance(x_len, y_len):
-    hypotenuse = x_len*x_len + y_len*y_len
+    hypotenuse = x_len * x_len + y_len * y_len
     return math.sqrt(hypotenuse)
 
 
 def check_inside_circle(x, y, radius, h, k):
-    val = (x-h)**2 + (y-k)**2 - radius**2
+    val = (x - h) ** 2 + (y - k) ** 2 - radius ** 2
     if val <= 0.0:
         return True
     else:
         return False
+
+
+def calculate_slope(x0, y0, x1, y1):
+    fun_slope = 0
+    try:
+        fun_slope = (y1 - y0) / (x1 - x0)
+    except ZeroDivisionError:
+        fun_slope = (y1 - y0) / (x1 - (x0 + 1))
+    return fun_slope
+
+
+def calculate_y(x0, y0, x1, m):
+    y = m * (x1 - x0) + y0
+    return y
+
+
+def calculate_x(x0, y0, y1, m):
+    x = (y1 - y0) / m + x0
+    return x
 
 
 # Player level variables and functions
@@ -37,10 +55,20 @@ player_x = 210
 player_y = 320
 player_circle_width = 10
 player_color = (255, 255, 255)  # Color in RGB
+line_color = (205, 255, 10)
+line_width = 5
+playerMoveFlag = 0
+endLineValue = ()
+offset = 10
+initial_line_click = ()
 
 
 def draw_player(x, y):
     pygame.draw.circle(screen, player_color, (x, y), player_circle_width)
+
+
+def draw_line(ini_pos, mouse_pos):
+    pygame.draw.line(screen, line_color, ini_pos, mouse_pos, line_width)
 
 
 # Hole Level variables and functions
@@ -63,8 +91,16 @@ while isRunning:
     draw_hole(hole_x, hole_y)
 
     if if_mouse_clicked:
-        draw_player(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1])
-        print(pygame.mouse.get_pos())
+        draw_line(initial_line_click, pygame.mouse.get_pos())
+
+    if playerMoveFlag == 3:
+        print("Move Player")
+        slope = calculate_slope(player_x, player_y, endLineValue[0], endLineValue[1])
+        print("Slope", slope)
+        # There is some bug here check the algorithm to do,
+        # one of the approaches may be to implement the bresenham's line drawing algorithm
+
+        playerMoveFlag = 0
 
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -88,15 +124,18 @@ while isRunning:
                 isRunning = False  # Pressing ESC will quit the game
 
         if event.type == MOUSEBUTTONDOWN:
-            if check_inside_circle(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1], player_circle_width, player_x, player_y):
+            if check_inside_circle(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1], player_circle_width, player_x,
+                                   player_y):
                 if event.button == 1:  # Only left button is clicked
-                    print("Inside object")
                     if_mouse_clicked = True
-            # print("Mouse clicked on x:", pygame.mouse.get_pos()[0])
-            # print("Mouse clicked on y:", pygame.mouse.get_pos()[1])
-            # print("Player x: {0} Player y: {1}".format(player_x, player_y))
+                    playerMoveFlag = 0
+                    initial_line_click = pygame.mouse.get_pos()
+
         if event.type == MOUSEBUTTONUP:
             if event.button == 1:
                 if_mouse_clicked = False
+                # Storing the start and end points
+                endLineValue = pygame.mouse.get_pos()
+                playerMoveFlag = 3
 
     pygame.display.update()
